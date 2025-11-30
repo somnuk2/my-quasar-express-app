@@ -1,85 +1,99 @@
 <template>
-  <div class="q-pa-md" style="max-width: 400px">
+  <q-page padding>
+    <div class="text-h4 q-mb-md">
+      Advanced Full-Stack Demo (Quasar + Express)
+    </div>
 
-    <q-form
-      @submit="onSubmit"
-      @reset="onReset"
-      class="q-gutter-md"
-    >
-      <q-input
-        filled
-        v-model="name"
-        label="Your name *"
-        hint="Name and surname"
-        lazy-rules
-        :rules="[ val => val && val.length > 0 || 'Please type something']"
-      />
+    <!-- Git Workflow (จากตัวอย่างก่อน) -->
+    <q-card class="q-mb-md">
+      <q-card-section>
+        <div class="text-h6">Git Workflow</div>
+        <q-list bordered separator class="q-mt-sm">
+          <q-item v-for="(step, index) in gitSteps" :key="index">
+            <q-item-section avatar>
+              <q-badge>{{ index + 1 }}</q-badge>
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>{{ step.title }}</q-item-label>
+              <q-item-label caption>{{ step.detail }}</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+      </q-card-section>
+    </q-card>
 
-      <q-input
-        filled
-        type="number"
-        v-model="age"
-        label="Your age *"
-        lazy-rules
-        :rules="[
-          val => val !== null && val !== '' || 'Please type your age',
-          val => val > 0 && val < 100 || 'Please type a real age'
-        ]"
-      />
+    <!-- Docker Concepts (จากตัวอย่างก่อน) -->
+    <q-card class="q-mb-md">
+      <q-card-section>
+        <div class="text-h6">Docker Concepts</div>
+        <q-list bordered separator class="q-mt-sm">
+          <q-item v-for="(item, index) in dockerItems" :key="index">
+            <q-item-section>
+              <q-item-label>{{ item.title }}</q-item-label>
+              <q-item-label caption>{{ item.detail }}</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+      </q-card-section>
+    </q-card>
 
-      <q-toggle v-model="accept" label="I accept the license and terms" />
-
-      <div>
-        <q-btn label="Submit" type="submit" color="primary"/>
-        <q-btn label="Reset" type="reset" color="primary" flat class="q-ml-sm" />
-      </div>
-    </q-form>
-
-  </div>
+    <!-- New: API Data from Backend -->
+    <q-card>
+      <q-card-section>
+        <div class="text-h6">Data from Backend API</div>
+        <q-spinner v-if="loading" color="primary" size="2em" />
+        <q-list v-else bordered separator class="q-mt-sm">
+          <q-item>
+            <q-item-section>
+              <q-item-label>Advanced Git</q-item-label>
+              <q-item-label caption>{{ apiData.git.detail }}</q-item-label>
+            </q-item-section>
+          </q-item>
+          <q-item>
+            <q-item-section>
+              <q-item-label>Advanced Docker</q-item-label>
+              <q-item-label caption>{{ apiData.docker.detail }}</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+        <q-btn v-if="!loading" color="primary" @click="fetchData">Refresh Data</q-btn>
+      </q-card-section>
+    </q-card>
+  </q-page>
 </template>
 
-<script>
-import { useQuasar } from 'quasar'
-import { ref } from 'vue'
+<script setup>
+import { ref, onMounted } from 'vue';
+import axios from 'axios';
 
-export default {
-  setup () {
-    const $q = useQuasar()
-
-    const name = ref(null)
-    const age = ref(null)
-    const accept = ref(false)
-
-    return {
-      name,
-      age,
-      accept,
-
-      onSubmit () {
-        if (accept.value !== true) {
-          $q.notify({
-            color: 'red-5',
-            textColor: 'white',
-            icon: 'warning',
-            message: 'You need to accept the license and terms first'
-          })
-        }
-        else {
-          $q.notify({
-            color: 'green-4',
-            textColor: 'white',
-            icon: 'cloud_done',
-            message: 'Submitted'
-          })
-        }
-      },
-
-      onReset () {
-        name.value = null
-        age.value = null
-        accept.value = false
-      }
-    }
+// จากตัวอย่างก่อน
+const gitSteps = [
+  {
+    title: 'Advanced Git Workflow',
+    detail: 'ใช้ branch protection บน GitHub, code review ใน PR, และ squash merge เพื่อ history สะอาด'
   }
-}
+];
+const dockerItems = [
+  {
+    title: 'Advanced Docker',
+    detail: 'ใช้ multi-stage build, healthcheck ใน Dockerfile, และ orchestration ด้วย Compose/Swarm'
+  }
+];
+
+const apiData = ref({ git: {}, docker: {} });
+const loading = ref(true);
+
+const fetchData = async () => {
+  loading.value = true;
+  try {
+    const response = await axios.get(process.env.API_URL + '/api/demo');
+    apiData.value = response.data;
+  } catch (error) {
+    console.error('API Error:', error);
+  } finally {
+    loading.value = false;
+  }
+};
+
+onMounted(fetchData);
 </script>
