@@ -1,143 +1,70 @@
 <template>
-  <div class="q-pa-md">
-    <q-table
-      title="Treats"
-      :rows="rows"
-      :columns="columns"
-      row-key="name"
-    />
-  </div>
+  <q-page padding>
+    <div class="text-h4 q-mb-md">
+      Task List (Express + Prisma + Supabase)
+    </div>
+
+    <div class="q-mb-md row items-center q-gutter-sm">
+      <q-btn
+        color="primary"
+        label="Reload Tasks"
+        :loading="loading"
+        @click="fetchTasks"
+      />
+      <span v-if="errorMessage" class="text-negative">
+        {{ errorMessage }}
+      </span>
+    </div>
+
+    <q-spinner v-if="loading" color="primary" size="2em" />
+
+    <div v-else>
+      <div v-if="tasks.length === 0" class="text-grey">
+        ยังไม่มีงานในระบบ ลองสร้างด้วย curl / Postman ก่อน
+      </div>
+
+      <q-list v-else bordered separator>
+        <q-item v-for="task in tasks" :key="task.id">
+          <q-item-section>
+            <q-item-label>{{ task.title }}</q-item-label>
+            <q-item-label caption>{{ task.description }}</q-item-label>
+          </q-item-section>
+          <q-item-section side>
+            <q-item-label caption>
+              {{ new Date(task.createdAt).toLocaleString() }}
+            </q-item-label>
+          </q-item-section>
+        </q-item>
+      </q-list>
+    </div>
+  </q-page>
 </template>
 
-<script>
-const columns = [
-  {
-    name: 'name1',
-    required: true,
-    label: 'Dessert (100g serving)',
-    align: 'left',
-    field: row => row.name,
-    format: val => `${val}`,
-    sortable: true
-  },
-  { name: 'calories', align: 'center', label: 'Calories', field: 'calories', sortable: true },
-  { name: 'fat', label: 'Fat (g)', field: 'fat', sortable: true },
-  { name: 'carbs', label: 'Carbs (g)', field: 'carbs' },
-  { name: 'protein', label: 'Protein (g)', field: 'protein' },
-  { name: 'sodium', label: 'Sodium (mg)', field: 'sodium' },
-  { name: 'calcium', label: 'Calcium (%)', field: 'calcium', sortable: true, sort: (a, b) => parseInt(a, 10) - parseInt(b, 10) },
-  { name: 'iron', label: 'Iron (%)', field: 'iron', sortable: true, sort: (a, b) => parseInt(a, 10) - parseInt(b, 10) }
-]
+<script setup>
+import { ref, onMounted } from 'vue';
+import axios from 'axios';
 
-const rows = [
-  {
-    name: 'Frozen Yogurt',
-    calories: 159,
-    fat: 6.0,
-    carbs: 24,
-    protein: 4.0,
-    sodium: 87,
-    calcium: '14%',
-    iron: '1%'
-  },
-  {
-    name: 'Ice cream sandwich',
-    calories: 237,
-    fat: 9.0,
-    carbs: 37,
-    protein: 4.3,
-    sodium: 129,
-    calcium: '8%',
-    iron: '1%'
-  },
-  {
-    name: 'Eclair',
-    calories: 262,
-    fat: 16.0,
-    carbs: 23,
-    protein: 6.0,
-    sodium: 337,
-    calcium: '6%',
-    iron: '7%'
-  },
-  {
-    name: 'Cupcake',
-    calories: 305,
-    fat: 3.7,
-    carbs: 67,
-    protein: 4.3,
-    sodium: 413,
-    calcium: '3%',
-    iron: '8%'
-  },
-  {
-    name: 'Gingerbread',
-    calories: 356,
-    fat: 16.0,
-    carbs: 49,
-    protein: 3.9,
-    sodium: 327,
-    calcium: '7%',
-    iron: '16%'
-  },
-  {
-    name: 'Jelly bean',
-    calories: 375,
-    fat: 0.0,
-    carbs: 94,
-    protein: 0.0,
-    sodium: 50,
-    calcium: '0%',
-    iron: '0%'
-  },
-  {
-    name: 'Lollipop',
-    calories: 392,
-    fat: 0.2,
-    carbs: 98,
-    protein: 0,
-    sodium: 38,
-    calcium: '0%',
-    iron: '2%'
-  },
-  {
-    name: 'Honeycomb',
-    calories: 408,
-    fat: 3.2,
-    carbs: 87,
-    protein: 6.5,
-    sodium: 562,
-    calcium: '0%',
-    iron: '45%'
-  },
-  {
-    name: 'Donut',
-    calories: 452,
-    fat: 25.0,
-    carbs: 51,
-    protein: 4.9,
-    sodium: 326,
-    calcium: '2%',
-    iron: '22%'
-  },
-  {
-    name: 'KitKat',
-    calories: 518,
-    fat: 26.0,
-    carbs: 65,
-    protein: 7,
-    sodium: 54,
-    calcium: '12%',
-    iron: '6%'
-  }
-]
+// อ่านค่าจาก quasar.config → env.API_URL
+const API_URL = process.env.API_URL || 'http://localhost:3000';
 
-export default {
-  setup () {
-    return {
-      columns,
-      rows
-    }
+const tasks = ref([]);
+const loading = ref(false);
+const errorMessage = ref('');
+
+const fetchTasks = async () => {
+  loading.value = true;
+  errorMessage.value = '';
+
+  try {
+    const res = await axios.get(API_URL + '/api/tasks');
+    tasks.value = res.data.data; // backend ส่ง { data: [...] }
+  } catch (err) {
+    console.error('API /api/tasks error:', err);
+    errorMessage.value = 'โหลดงานจากฐานข้อมูลไม่สำเร็จ';
+  } finally {
+    loading.value = false;
   }
-}
+};
+
+onMounted(fetchTasks);
 </script>
